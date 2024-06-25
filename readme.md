@@ -1,6 +1,6 @@
 To run the application, use the following command:
 
-```uvicorn filename:app --reload```
+```uvicorn main:app --reload```
 
 or
 

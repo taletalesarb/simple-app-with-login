@@ -5,6 +5,12 @@ import jwt
 from datetime import datetime, timedelta
 from typing import Optional
 
+from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from pydantic import BaseModel
+import jwt
+from datetime import datetime, timedelta
+from typing import Optional
 # Constants
 SECRET_KEY = "your_secret_key"
 ALGORITHM = "HS256"
@@ -27,7 +33,7 @@ class User(BaseModel):
     username: str
 
 fake_users_db = {
-    "user1": {
+    "user": {
         "username": "user",
         "password": "pass"
     }
@@ -75,6 +81,7 @@ def read_root():
 @app.post("/login", response_model=Token)
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     user = authenticate_user(fake_users_db, form_data.username, form_data.password)
+    print(f"{form_data.username} {form_data.password}")
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
