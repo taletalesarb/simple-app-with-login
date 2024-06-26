@@ -5,12 +5,6 @@ import jwt
 from datetime import datetime, timedelta
 from typing import Optional
 
-from fastapi import FastAPI, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from pydantic import BaseModel
-import jwt
-from datetime import datetime, timedelta
-from typing import Optional
 # Constants
 SECRET_KEY = "your_secret_key"
 ALGORITHM = "HS256"
@@ -67,21 +61,21 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         if username is None:
             raise credentials_exception
         token_data = TokenData(username=username)
+
     except jwt.PyJWTError:
         raise credentials_exception
-    user = authenticate_user(fake_users_db, username=token_data.username, password="")
+    user = fake_users_db.get(token_data.username)
     if user is None:
         raise credentials_exception
     return user
 
 @app.get("/")
-def read_root():
+def hello_world():
     return {"message": "Hello, World!"}
 
 @app.post("/login", response_model=Token)
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     user = authenticate_user(fake_users_db, form_data.username, form_data.password)
-    print(f"{form_data.username} {form_data.password}")
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -94,11 +88,19 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
-@app.post("/protected-post")
-async def protected_post(current_user: User = Depends(get_current_user)):
-    return {"message": f"Hello, {current_user.username}. You are authenticated and accessing a protected POST endpoint!!"}
-
 @app.get("/protected-get")
 async def protected_get(current_user: User = Depends(get_current_user)):
-    return {"message": f"Hello, {current_user.username}. You are authenticated and accessing a protected GET endpoint!"}
+    return {"message": f"Hello, {current_user['username']}. You are authenticated and accessing a protected GET endpoint!"}
 
+
+class Item(BaseModel):
+    name: str
+    description: str | None = None
+    price: float
+    tax: float | None = None
+
+@app.post("/protected-post/{path}")
+async def protected_post(path: str, param: str,item: Item, current_user: User = Depends(get_current_user)):
+    msg = f"Hello, {current_user['username']}. You are authenticated and accessing a protected POST endpoint!!, path: {path}, param: {param}, item: {item}"
+    print(f"msg: {msg}")
+    return {"message": msg}
